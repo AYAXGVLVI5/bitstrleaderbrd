@@ -24,7 +24,7 @@ var Constants = {
   APP_NAME: "Bitstarter", 
   FUNDING_TARGET: 500.00,
   FUNDING_UNIT_SYMBOL: "BTC",
-  FUNDING_SI_SCALE: 1000,
+  FUNDING_SI_SCALE: 1,
   FUNDING_END_DATE: new Date("October 8, 2013"),
   PRODUCT_NAME: "Drive Challenge Mobile Game",
   PRODUCT_SHORT_DESCRIPTION: "Donate to the game? It will be Awesome!! ;)",
