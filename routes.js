@@ -112,7 +112,10 @@ var ROUTES = define_routes({
     '/': indexfn,
     '/orders': orderfn,
     '/api/orders': api_orderfn,
-    '/refresh_orders': refresh_orderfn
+    '/refresh_orders': refresh_orderfn,
+    '/demo':function(req,res){
+       res.render('demogame');
+    }
 });
 
 module.exports = ROUTES;
