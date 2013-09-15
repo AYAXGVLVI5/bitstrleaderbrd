@@ -42,14 +42,25 @@ var POP = {
     offset: {top: 0, left: 0},
     // store all bubble, touches, particles etc
     entities: [],
+    entitiesbackground :[],
     // the amount of game ticks until
     // we spawn a bubble
     nextBubble: 80,
     // for tracking player's progress
     nextSheep2 :1000,
+    sundoesntexist : true,
+    moondoesntexist : true,
+    skydoesntexist : true,
+    earthdoesntexist : true,
+    playmode : false,
+    menumode : true,
+    tapsnosuccess: 5,
+    lifes : 3,
+    gameover : false,
+    level :  1,
 
     score: {
-        taps: 0,
+        taps: -1,
         hit: 0,
         escaped: 0,
         accuracy: 0
@@ -87,7 +98,7 @@ var POP = {
         // our resize function
         POP.ua = navigator.userAgent.toLowerCase();
         POP.android = POP.ua.indexOf('android') > -1 ? true : false;
-        POP.ios = ( POP.ua.indexOf('iphone') > -1 || POP.ua.indexOf('ipad') > -1  ) ? true : false;
+        POP.ios = ( POP.ua.indexOf('iphone') > -1 || POP.ua.indexOf('ipad') > -1 || POP.ua.indexOf('ipod') > -1 ) ? true : false;
 
         // set up our wave effect
         // basically, a series of overlapping ovejas
@@ -131,9 +142,7 @@ var POP = {
 
         // we're ready to resize
         POP.resize();
-
-        POP.loop();
-
+        POP.loopmenu();
     },
 
 
@@ -177,10 +186,15 @@ var POP = {
     // and checked for collisions etc
 
     update: function() {
+        
         var i,
-            checkCollision = false; 
- 
-
+        checkCollision = false; 
+        if(POP.lifes <=0){   
+        
+           POP.gameover = true;  
+        
+        }
+        else if (POP.playmode){
         // decrease our nextBubble counter
         POP.nextBubble -= 1;
         POP.nextSheep2 -= 1;
@@ -195,14 +209,32 @@ var POP = {
            POP.entities.push(new POP.Sheep2());
            POP.nextSheep2 = (Math.random()*130) +940;     
         }
-
-
+        if (POP.skydoesntexist){
+           POP.entitiesbackground.push(new POP.Sky());
+           POP.skydoesntexist = false;
+        }
+        if (POP.sundoesntexist){
+           POP.entitiesbackground.push(new POP.Sun());
+           POP.sundoesntexist = false;
+        }
+        if (POP.moondoesntexist){
+           POP.entitiesbackground.push(new POP.Moon());
+           POP.moondoesntexist = false;
+        }
+        if (POP.earthdoesntexist){
+           POP.entitiesbackground.push(new POP.Earth());
+           POP.earthdoesntexist = false;
+        }
         // spawn a new instance of Touch
         // if the user has tapped the screen
         if (POP.Input.tapped) {
-            // keep track of taps; needed to 
-            // calculate accuracy
+            
             POP.score.taps += 1;
+            if (POP.score.taps > POP.tapsnosuccess){
+                POP.score.taps =0;
+                POP.lifes--;
+            }
+            
             // add a new touch
             POP.entities.push(new POP.Touch(POP.Input.x, POP.Input.y));
             // set tapped back to false
@@ -210,6 +242,9 @@ var POP = {
             // in the next cycle
             POP.Input.tapped = false;
             checkCollision = true;
+        }
+        for (i = 0; i < POP.entitiesbackground.length; i += 1) {
+            POP.entitiesbackground[i].update();
         }
 
         // cycle through all entities and update as necessary
@@ -220,6 +255,9 @@ var POP = {
                 hit = POP.collides(POP.entities[i], 
                                     {x: POP.Input.x, y: POP.Input.y, r: 7});
                 if (hit && (POP.entities[i].type === 'bubble' )) {
+                     
+                    // reset tapping counter 
+                    POP.score.taps =0; 
                     // spawn an exposion
                     for (var n = 0; n < 5; n +=1 ) {
                         POP.entities.push(new POP.Particle(
@@ -232,6 +270,7 @@ var POP = {
                     }
                     if (POP.entities[i].type === 'bubble' && POP.entities[i].speed >4 && POP.entities[i].r<14 ){
                        POP.score.hit += 30;
+                       POP.score.taps =0;
                        POP.entities.push(new POP.Textextrapoints(                   POP.entities[i].x, 
                             POP.entities[i].y, 
                             30)); 
@@ -247,6 +286,7 @@ var POP = {
                             50)); 
                     
                     POP.score.hit += 50;
+                    POP.score.taps =0;
                 }
 
                 POP.entities[i].remove = hit;
@@ -269,11 +309,11 @@ var POP = {
         POP.wave.offset = Math.sin(POP.wave.time * 0.8) * 5;
 
         // calculate accuracy
-        POP.score.accuracy = (POP.score.hit / POP.score.taps) * 100;
-        POP.score.accuracy = isNaN(POP.score.accuracy) ?
-            0 :
-            ~~(POP.score.accuracy); // a handy way to round floats
-
+        // POP.score.accuracy = (POP.score.hit / POP.score.taps) * 100;
+        // POP.score.accuracy = isNaN(POP.score.accuracy) ?
+        //    0 :
+        //    ~~(POP.score.accuracy); // a handy way to round floats
+    }
     },
 
 
@@ -282,38 +322,157 @@ var POP = {
 
         var i;
 
+// Render Background
+        
+        for (i = 0; i < POP.entitiesbackground.length; i += 1) {
+                POP.entitiesbackground[i].render();
+        }
 
-        POP.Draw.rect(0, 0, POP.WIDTH, POP.HEIGHT, '#a1c0f8');
-        POP.Draw.circle(POP.WIDTH/2, 1.5*POP.HEIGHT,1.5*POP.WIDTH, '#358535');
-
-            // cycle through all entities and render to canvas
+        // cycle through all entities and render to canvas
             for (i = 0; i < POP.entities.length; i += 1) {
                 POP.entities[i].render();
-        }
+            }
+        
+        
 
         // display scores
         POP.Draw.text('Hit: ' + POP.score.hit, 20, 30, 14, '#fff');
         POP.Draw.text('Escaped: ' + POP.score.escaped, 20, 50, 14, '#fff');
-   //     POP.Draw.text('Buy here sleep music at CDBaby.com', 20, POP.HEIGHT-15, 14, '#fff');
-        
+        POP.Draw.text('Taps without success: ' + POP.score.taps, 20, 70, 14, '#fff');
+        POP.Draw.text('Lifes: ' + POP.lifes, 20, 90, 14, '#fff');
+ 
 
+       // POP.Draw.text('Buy here sleep music at CDBaby.com', 20, POP.HEIGHT-15, 14, '#fff');
+    },
+    updatemenu: function() {
+     if (POP.skydoesntexist){
+           POP.entitiesbackground.push(new POP.Sky());
+           POP.skydoesntexist = false;
+        }
+        if (POP.sundoesntexist){
+           POP.entitiesbackground.push(new POP.Sun());
+           POP.sundoesntexist = false;
+        }
+        if (POP.moondoesntexist){
+           POP.entitiesbackground.push(new POP.Moon());
+           POP.moondoesntexist = false;
+        }
+        if (POP.earthdoesntexist){
+           POP.entitiesbackground.push(new POP.Earth());
+           POP.earthdoesntexist = false;
+        }
+        if (POP.Input.tapped) {
+          POP.playmode = true;
+          POP.menumode = false;
+          POP.gameover = false;
+        }
+        for (var i = 0; i < POP.entitiesbackground.length; i += 1) {
+                POP.entitiesbackground[i].update();
+        }
+        for (var i = 0; i < POP.entities.length; i += 1) {
+                POP.entities.splice(i, 1);
+        }
 
 
     },
+    rendermenu:function(){
+    
+        if (POP.menumode){ 
+        for (var i = 0; i < POP.entitiesbackground.length; i += 1) {
+                POP.entitiesbackground[i].render();
+        }
+        POP.Draw.text('Tap anywhere to begin',12,POP.HEIGHT-30, 14, '#000');
+        }
+    },
+    updategameovermenu: function() {
+
+        var i;
+        if (POP.skydoesntexist){
+           POP.entitiesbackground.push(new POP.Sky());
+           POP.skydoesntexist = false;
+        }
+        if (POP.sundoesntexist){
+           POP.entitiesbackground.push(new POP.Sun());
+           POP.sundoesntexist = false;
+        }
+        if (POP.moondoesntexist){
+           POP.entitiesbackground.push(new POP.Moon());
+           POP.moondoesntexist = false;
+        }
+        if (POP.earthdoesntexist){
+           POP.entitiesbackground.push(new POP.Earth());
+           POP.earthdoesntexist = false;
+        }
+       
+        for (i = 0; i < POP.entitiesbackground.length; i += 1) {
+            POP.entitiesbackground[i].update();
+        }
+        for (i = 0; i < POP.entities.length; i += 1) {
+            POP.entities[i].remove = true;
+        }
 
 
+        if (POP.Input.tapped) {
+            //POP.init();
+            POP.menumode = true;
+            POP.gameover = false;
+            POP.score.hit = 0;
+            POP.score.escaped = 0;
+            POP.lifes = 3;
+            POP.score.taps = -1;
+            POP.Input.tapped = false;
+            
+        }
+
+    },
+    rendergameovermenu:function(){
+     
+        var i;
+        for (i=0; i < POP.entitiesbackground.length; i += 1) {
+                POP.entitiesbackground[i].render();
+           }
+        POP.Draw.text('Game OVER',12,POP.HEIGHT/2, 30, '#000');
+        POP.Draw.text('Your Score was: ' + POP.score.hit, 12, POP.HEIGHT/2+30, 14, '#fff');
+        POP.Draw.text('Play again?', 12, POP.HEIGHT/2+50, 14, '#fff');
+
+
+    },
     // the actual loop
     // requests animation frame
     // then proceeds to update
     // and render
     loop: function() {
 
-        requestAnimFrame( POP.loop );
-
-        POP.update();
-        POP.render();
+       if (POP.gameover){
+           POP.playmode = false;
+           POP.loopgameover();
+        }
+        else if (POP.playmode){
+           POP.update();
+           POP.render();
+        }
+    },
+    loopmenu: function(){
+       requestAnimFrame( POP.loopmenu); 
+       if (!POP.playmode && POP.menumode){         
+         POP.updatemenu();
+         POP.rendermenu();
+        }
+        else if(!POP.playmode && POP.gameover){
+         POP.loopgameover();
+        }
+        else{
+           POP.loop();
+        }  
+    },
+    loopgameover: function(){
+       if (POP.gameover ){         
+         POP.updategameovermenu();
+         POP.rendergameovermenu();
+        }
     }
 
+    
 
 };
 
@@ -391,11 +550,61 @@ POP.Draw = {
         POP.ctx.closePath();
         POP.ctx.fill();
     },
+    wolf: function(x, y, r, col, opacity) {
+        r=r;
+        //Teeth
+        POP.ctx.fillStyle = 'rgba(255,255,255,'+opacity/2+')';
+        POP.ctx.beginPath();
+        for (var i=0;i<3;i++){      
+           POP.ctx.moveTo(x-3*r+i*r,y+r/2+i*r/2);
+           POP.ctx.quadraticCurveTo(x-2.5*r+i*r,y+2*r+i*r/2,x-2*r+i*r,y+r/2+i*r/2);
+        }
+        for (var i=0;i<3;i++){      
+           POP.ctx.moveTo(x-3*r+i*r,y+3*r+i*r/3);
+           POP.ctx.quadraticCurveTo(x-2.5*r+i*r,y+2*r+i*r/3,x-2*r+i*r,y+3*r+(i+1)*r/3);
+        }
+
+        POP.ctx.closePath();
+        POP.ctx.fill();
+        //mouth head up
+        POP.ctx.fillStyle = col;
+        POP.ctx.beginPath();      
+        POP.ctx.moveTo(x-10,y);
+        POP.ctx.quadraticCurveTo(x-4*r, y+r,x-5*r,y-0.5*r);
+        POP.ctx.quadraticCurveTo(x+4, y+1.6*r,x+0.8*r,y+5*r);
+        POP.ctx.arc(x + r, y + r, r/8, 0,  Math.PI * 2, true);
+        //ear
+        POP.ctx.moveTo(x+2*r,y-r);
+        POP.ctx.quadraticCurveTo(x+r,y+2*r,x+r,y);
+        POP.ctx.closePath();
+        POP.ctx.fill();
+        //mouth bottom
+        POP.ctx.beginPath();      
+        POP.ctx.moveTo(x-3*r,y+3*r);
+        POP.ctx.quadraticCurveTo(x+1.5*r,y+5*r,x+0.5*r,y+4*r);
+        POP.ctx.quadraticCurveTo(x-4*r,y+4*r,x-3*r,y+2.5*r);
+        POP.ctx.closePath();
+        POP.ctx.fill();
+        //neck
+        POP.ctx.beginPath();      
+        POP.ctx.moveTo(x+r,y);
+        POP.ctx.quadraticCurveTo(x+4*r,y+10*r,x+1.5*r,y+6*r);
+        POP.ctx.closePath();
+        POP.ctx.fill();
+      //eye
+        //POP.ctx.fillStyle = 'rgba(0,0,0,'+opacity+')';
+        POP.ctx.beginPath();      
+        POP.ctx.moveTo(x+r,y);
+        POP.ctx.quadraticCurveTo(x+r,y+2*r,x-r,y+0.5*r);
+        POP.ctx.closePath();
+        POP.ctx.fill();
+        var col2 = 'rgba(0,0,0,'+opacity+')';
+        POP.Draw.circle(x-1.5*r,y-r/5,r/3,col2);   
+    },
+
     sheephead: function(x, y, r, col) {
         var offsety = -r;
         var offsetx = r;  
-
-
         POP.ctx.fillStyle = col; 
         POP.ctx.beginPath();
         for(var i=0;i<9;i++){
@@ -493,7 +702,8 @@ POP.Touch = function(x, y) {
     };
 
     this.render = function() {
-        POP.Draw.oveja(this.x, this.y, this.r, 'rgba(35,145,145,'+this.opacity+')');
+//        POP.Draw.wolf(this.x, this.y, this.r, 'rgba(85,85,85,'+this.opacity+')', this.opacity);
+        POP.Draw.oveja(this.x, this.y, this.r, 'rgba(83,154,181,'+this.opacity+')', this.opacity);
     };
 
 };
@@ -607,6 +817,114 @@ POP.Sheep2 = function() {
 
 };
 
+POP.Sun = function() {
+
+    this.type = 'sun';
+    this.r = POP.currentWidth / 12; 
+    this.speed = 1;           
+    this.x = ((POP.currentWidth )/6);
+    this.y = POP.currentHeight *0.7; 
+    this.remove = false;
+    this.sunradx = POP.currentWidth /2 - this.r;
+    this.sunrady = POP.currentHeight /2 - this.r;
+    this.xConstant = POP.currentWidth/2 ;
+    this.yConstant = POP.currentHeight/2 ;
+
+    this.update = function() {
+        
+        var time = new Date().getTime()*0.0002;
+
+        // move up the screen by 1 pixel
+       
+        this.x = this.sunradx * Math.sin(time)+this.xConstant;
+        this.y = -this.sunrady * Math.cos(time)+this.yConstant;
+
+        // if off screen, flag for removal
+        if (this.y < -10) {
+            this.remove = true;
+        }
+
+    };
+    this.render = function() {
+
+        POP.Draw.circle(this.x, this.y, this.r, '#e8e540');
+    };
+
+};
+POP.Moon = function() {
+
+    this.type = 'sun';
+    this.r = POP.currentWidth / 24; 
+    this.speed = 1;           
+    this.x = ((POP.currentWidth )/6);
+    this.y = POP.currentHeight *0.7; 
+    this.remove = false;
+    this.sunradx = POP.currentWidth /2 - this.r;
+    this.sunrady = POP.currentHeight /2 - this.r;
+    this.xConstant = POP.currentWidth/2 ;
+    this.yConstant = POP.currentHeight/2 ;
+
+    this.update = function() {
+        
+        var time = new Date().getTime()*0.0002;
+        this.x = this.sunradx * Math.sin(time+Math.PI)+this.xConstant;
+        this.y = -this.sunrady * Math.cos(time+Math.PI)+this.yConstant;
+
+        // if off screen, flag for removal
+        if (this.y < -10) {
+            this.remove = true;
+        }
+
+    };
+    this.render = function() {
+
+        POP.Draw.circle(this.x, this.y, this.r, '#ffffff');
+    };
+
+};
+POP.Sky = function() {
+    this.type = 'sky'; 
+    var R=10;
+    var G=23;
+    var B=51;
+    this.col= null;
+    uplight=true;
+    
+    this.update = function() {   
+        var time = new Date().getTime()*0.0002;  
+        R = ~~(100+60*Math.sin(time+Math.PI/4));
+        G = ~~(110+70*Math.sin(time+Math.PI/4));
+        B = ~~(140+100*Math.sin(time+Math.PI/4));        
+        POP.Sky.col='rgba('+R+','+G+','+B+',1)';    
+    };
+    this.render = function() {
+        POP.Draw.rect(0, 0, POP.WIDTH, POP.HEIGHT,POP.Sky.col);
+    };
+
+};
+POP.Earth = function() {
+    this.col= null;
+    var R=10;
+    var G=57;
+    var B=10;
+
+    this.type = 'sky';    
+    this.update = function() {        
+        var time = new Date().getTime()*0.0002;
+        R = ~~(45+35*Math.sin(time+Math.PI/4));
+        G = ~~(115+55*Math.sin(time+Math.PI/4));
+        B = ~~(45+35*Math.sin(time+Math.PI/4));        
+        POP.Earth.col='rgba('+R+','+G+','+B+',1)';    
+      
+    };
+    this.render = function() {
+       POP.Draw.circle(POP.WIDTH/2, 1.5*POP.HEIGHT,1.5*POP.WIDTH, POP.Earth.col);
+    };
+
+};
+
+
+
 POP.Particle = function(x, y,r, col) {
 
     this.x = x;
@@ -624,7 +942,7 @@ POP.Particle = function(x, y,r, col) {
     this.vx = ~~(Math.random() * 4) * this.dir;
     this.vy = ~~(Math.random() * 7);
 
-    this.remove = false;
+    //this.remove = false;
 
     this.update = function() {
 
@@ -644,7 +962,7 @@ POP.Particle = function(x, y,r, col) {
         this.vy += 0.25;
 
         // offscreen
-        if (this.y < 0) {
+        if (this.y > POP.HEIGHT  ) {
             this.remove = true;
         }
 
@@ -659,6 +977,16 @@ POP.Particle = function(x, y,r, col) {
 
 window.addEventListener('load', POP.init, false);
 window.addEventListener('resize', POP.resize, false);
+
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-42972905-2', 'glacial-falls-8555.herokuapp.com');
+  ga('send', 'pageview');
 
 </script>
 
