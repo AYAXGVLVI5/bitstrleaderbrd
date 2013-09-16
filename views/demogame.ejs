@@ -414,14 +414,15 @@ var POP = {
 
         if (POP.Input.tapped) {
             //POP.init();
-            POP.menumode = true;
-            POP.gameover = false;
-            POP.score.hit = 0;
-            POP.score.escaped = 0;
-            POP.lifes = 3;
-            POP.score.taps = -1;
-            POP.Input.tapped = false;
-            
+            if (POP.Input.y > POP.HEIGHT/2+50-14 && POP.Input.y < POP.HEIGHT/2+50+8 && POP.Input.x > POP.WIDTH/2-62 ){
+               POP.menumode = true;
+               POP.gameover = false;
+               POP.score.hit = 0;
+               POP.score.escaped = 0;
+               POP.lifes = 3;
+               POP.score.taps = -1;
+               POP.Input.tapped = false;
+            }
         }
 
     },
@@ -431,10 +432,9 @@ var POP = {
         for (i=0; i < POP.entitiesbackground.length; i += 1) {
                 POP.entitiesbackground[i].render();
            }
-        POP.Draw.text('Game OVER',12,POP.HEIGHT/2, 30, '#000');
-        POP.Draw.text('Your Score was: ' + POP.score.hit, 12, POP.HEIGHT/2+30, 14, '#fff');
-        POP.Draw.text('Play again?', 12, POP.HEIGHT/2+50, 14, '#fff');
-
+        POP.Draw.text('Game OVER',12,POP.HEIGHT/4, 30, '#000');
+        POP.Draw.text('Your Score was: ' + POP.score.hit, 12, POP.HEIGHT/4+30, 14, '#fff');
+        POP.Draw.menuitem(POP.WIDTH/2-50,POP.HEIGHT/2+50,'Play again?','#fff',14);
 
     },
     // the actual loop
@@ -505,7 +505,10 @@ POP.Draw = {
         POP.ctx.fillStyle = col;
         POP.ctx.fillRect(x, y, w, h);
     },
-
+    menuitem: function(x,y,string,col,size) {
+      POP.Draw.rect(x-size,y-size,POP.WIDTH,size+8,'rgba(0,0,0,0.3)');
+      POP.Draw.text(string, x, y, size,col);
+    },
     oveja: function(x, y, r, col) {
         POP.ctx.fillStyle = col;
         POP.ctx.beginPath();
@@ -990,7 +993,7 @@ window.addEventListener('resize', POP.resize, false);
 
 </script>
 
-
 </body>
 </html>
+
 
